@@ -16,7 +16,90 @@ public class Escape {
     public record Result(int[] path, int visited, int deadEnds) {}
 
     public static Result escape(Input.Walls w, int[] broken) {
-        // TODO
-        return new Result(new int[0], 0, 0);
+        int cols = w.cols();
+        int n = w.cells();
+        int exit = n - 1;
+        int[][] g = Graphs.open(w, broken);
+
+        int deadEnds = 0;
+        for (int i = 0; i < n; i++) {
+            if (g[i].length == 1) {
+                deadEnds++;
+            }
+        }
+
+        boolean[] visited = new boolean[n];
+        int[] parent = new int[n];
+        int[] next = new int[n];
+        int[] stack = new int[n];
+        int top = 0;
+        int count = 0;
+
+        stack[top] = 0;
+        top++;
+        visited[0] = true;
+        parent[0] = -1;
+        count = 1;
+
+        while (top > 0 && !visited[exit]) {
+            int cell = stack[top - 1];
+
+            if (next[cell] == 4) {
+                top--;
+                continue;
+            }
+
+            int dir = next[cell];
+            next[cell]++;
+
+            int nb = neighbor(cell, dir, cols, n);
+            if (nb == -1) continue;
+            if (!isOpen(g, cell, nb)) continue;
+            if (visited[nb]) continue;
+
+            visited[nb] = true;
+            count++;
+            parent[nb] = cell;
+            stack[top] = nb;
+            top++;
+        }
+
+
+        int length = 0;
+        int c = exit;
+        while (c != -1) {
+            length++;
+            c = parent[c];
+        }
+        int[] path = new int[length];
+        c = exit;
+        for (int i = length - 1; i >= 0; i--) {
+            path[i] = c;
+            c = parent[c];
+        }
+
+        return new Result(path, count, deadEnds);
+    }
+
+    private static int neighbor(int cell, int dir, int cols, int n) {
+        if (dir == 0) {
+            if (cell - cols >= 0) return cell - cols;
+        } else if (dir == 1) {
+            if (cell % cols != cols - 1) return cell + 1;
+        } else if (dir == 2) {
+            if (cell + cols < n) return cell + cols;
+        } else {
+            if (cell % cols != 0) return cell - 1;
+        }
+        return -1;
+    }
+
+    private static boolean isOpen(int[][] g, int cell, int nb) {
+        for (int i = 0; i < g[cell].length; i++) {
+            if (g[cell][i] == nb) {
+                return true;
+            }
+        }
+        return false;
     }
 }
