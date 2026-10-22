@@ -25,6 +25,23 @@ public class DisjointSetTest {
         check(d.find(4) == 4 && d.find(5) == 5, "a single cell is its own root");
 
         // TODO: add your own checks here
+        // itself
+        DisjointSet d2 = new DisjointSet(5);
+        check(!d2.union(2,2), "union(2;2) returns false");
+        check(d2.count()==5, "count stays 5 after union(2;2)");
+
+        DisjointSet d3 = new DisjointSet(6);
+        d3.union(0, 1); d3.union(2, 3); d3.union(0, 2);
+        check(!d3.union(1, 3), "union(1;3) returns false");        // допиши описание
+        check(d3.count() == 3, "count stays 3 after the failed union(1, 3)");        // допиши описание
+
+        DisjointSet d1 = new DisjointSet(100000);
+        for(int i=0;i<99999;i++){
+            d1.union(i,i+1);
+        }
+        check(d1.count()==1, "chain of 100000 cells is one set");
+        check(d1.connected(0,99999), "first and last cell of the chain are connected");
+
 
         System.out.println(failed == 0 ? "All checks passed." : failed + " checks failed.");
     }
