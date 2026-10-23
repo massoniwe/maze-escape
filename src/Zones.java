@@ -1,3 +1,4 @@
+import java.util.*;
 /**
  * Missions 4 and 5. The slides: a directed graph. Cells are 0 .. n-1, slide i goes from s.from()[i] to s.to()[i]
  * and takes s.time()[i]. There are no slides from a cell to itself, and the exit can always be reached from the start.
@@ -19,8 +20,77 @@ public class Zones {
      * Is DAG in Main is 1 when the number of zones equals the number of cells (no cycle), so you do not need a separate check.
      */
     public static int[] kosaraju(Input.Slides s) {
-        // TODO
-        return new int[s.n()];
+        int n = s.n();
+        int[][] out = Graphs.slidesFrom(s);
+        int[][] in = Graphs.slidesInto(s);
+        int[] stack = new int[n];
+
+
+        boolean[] seen = new boolean[n];
+        int[] pos = new int[n];
+        int[] order = new int[n];
+        int finished = 0;
+
+        for (int start = 0; start < n; start++) {
+            if (seen[start]) {
+                continue;
+            }
+            int top = 0;
+            stack[top] = start;
+            top++;
+            seen[start] = true;
+
+            while (top > 0) {
+                int cell = stack[top - 1];
+                if (pos[cell] < out[cell].length) {
+                    int slide = out[cell][pos[cell]];
+                    pos[cell]++;
+                    int next = s.to()[slide];
+                    if (!seen[next]) {
+                        seen[next] = true;
+                        stack[top] = next;
+                        top++;
+                    }
+                } else {
+                    order[finished] = cell;
+                    finished++;
+                    top--;
+                }
+            }
+        }
+
+
+        int[] zoneOf = new int[n];
+        for (int i = 0; i < n; i++) {
+            zoneOf[i] = -1;
+        }
+        int zones = 0;
+
+        for (int i = n - 1; i >= 0; i--) {
+            int start = order[i];
+            if (zoneOf[start] != -1) {
+                continue;
+            }
+            int top = 0;
+            stack[top] = start;
+            top++;
+            zoneOf[start] = zones;
+
+            while (top > 0) {
+                top--;
+                int cell = stack[top];
+                for (int j = 0; j < in[cell].length; j++) {
+                    int prev = s.from()[in[cell][j]];
+                    if (zoneOf[prev] == -1) {
+                        zoneOf[prev] = zones;
+                        stack[top] = prev;
+                        top++;
+                    }
+                }
+            }
+            zones++;
+        }
+        return zoneOf;
     }
 
     /**
@@ -30,7 +100,55 @@ public class Zones {
      * [1] the cost of the cheapest route from the zone of cell 0 to the zone of the last cell.
      */
     public static long[] routes(Input.Slides s, int[] zoneOf, int zoneCount) {
-        // TODO
-        return new long[]{0, 0};
+        List<List<Integer>> byZone = new ArrayList<>();
+        for (int z = 0; z < zoneCount; z++) {
+            byZone.add(new ArrayList<>());
+        }
+        for (int i = 0; i < s.count(); i++) {
+            int fromZone = zoneOf[s.from()[i]];
+            byZone.get(fromZone).add(i);
+        }
+
+        long INF = Long.MAX_VALUE;
+        long[] dist = new long[zoneCount];
+        int[] stages = new int[zoneCount];
+        for (int z = 0; z < zoneCount; z++) {
+            dist[z] = INF;
+            stages[z] = 1;
+        }
+        int startZone = zoneOf[0];
+        int exitZone = zoneOf[s.n() - 1];
+        dist[startZone] = 0;
+
+
+        for (int x = 0; x < zoneCount; x++) {
+            List<Integer> slides = byZone.get(x);
+            for (int j = 0; j < slides.size(); j++) {
+                int i = slides.get(j);
+                int y = zoneOf[s.to()[i]];
+                if (y == x) {
+                    continue;
+                }
+
+                if (stages[x] + 1 > stages[y]) {
+                    stages[y] = stages[x] + 1;
+                }
+
+                if (dist[x] != INF) {
+                    long cost = dist[x] + s.time()[i];
+                    if (cost < dist[y]) {
+                        dist[y] = cost;
+                    }
+                }
+            }
+        }
+
+        int longest = 0;
+        for (int z = 0; z < zoneCount; z++) {
+            if (stages[z] > longest) {
+                longest = stages[z];
+            }
+        }
+        return new long[]{longest, dist[exitZone]};
     }
 }
